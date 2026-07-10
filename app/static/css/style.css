@@ -1,0 +1,391 @@
+/* Kinetix Studio — custom animations & scrollbars */
+
+/* Google Sans universal — cubre elementos que no heredan font-family por defecto */
+*, *::before, *::after {
+  font-family: "Google Sans Display", "Google Sans", system-ui, sans-serif;
+}
+pre, code, .font-mono {
+  font-family: "JetBrains Mono", monospace !important;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; background-clip: padding-box; }
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink   { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes spin    { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.fade-in  { animation: fadeIn  0.25s ease-out; }
+.slide-up { animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1); }
+
+/* streaming cursor */
+.cursor-blink::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  background: #1A1A1A;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink 1s steps(1) infinite;
+}
+
+/* thinking shimmer */
+.thinking {
+  background: linear-gradient(90deg, #7A7A7A 25%, #1A1A1A 50%, #7A7A7A 75%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* live preview frame device transition */
+.frame-transition {
+  transition: max-width 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              height 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+              border-radius 0.5s ease, border-width 0.3s ease;
+}
+.frame-mobile {
+  max-width: 390px;
+  height: 100%;
+  max-height: 800px;
+  border-radius: 2.2rem;
+  border: 10px solid #e4e4e7;
+}
+
+.tool-body { max-height: 320px; overflow: auto; }
+
+textarea { scrollbar-width: thin; }
+
+/* ---- Landing: discrete "alive" animations ---- */
+
+/* scroll-reveal: elements fade+rise into view once, via IntersectionObserver toggling .is-visible */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal-up.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1.is-visible { transition-delay: 0.08s; }
+.reveal-delay-2.is-visible { transition-delay: 0.16s; }
+
+/* gentle lift on hover for cards (templates, recent projects) */
+.lift-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.lift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px -12px rgba(24, 24, 27, 0.16);
+}
+
+/* icon micro-bounce on card hover */
+.lift-card .lift-icon {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lift-card:hover .lift-icon {
+  transform: scale(1.12) rotate(-4deg);
+}
+
+/* subtle floating idle motion for the hero accent / suggestion chips */
+@keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.float-idle { animation: floatY 4.5s ease-in-out infinite; }
+
+/* ================================================
+   ANIMACIONES KINETIX - Personalización del Proyecto
+   ================================================ */
+
+/* ========== KEYFRAMES ========== */
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(156, 175, 136, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(156, 175, 136, 0);
+  }
+}
+
+/* ========== APLICACIÓN DE ANIMACIONES ========== */
+
+/* Navbar - Baja desde arriba */
+.navbar {
+  animation: fadeInDown 0.6s ease-out;
+}
+
+/* Hero Section */
+.hero h1 {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+.hero p {
+  animation: fadeInUp 0.8s ease-out 0.4s both;
+}
+
+/* Input Section - Zoom suave */
+.input-section {
+  animation: scaleIn 0.8s ease-out 0.6s both;
+}
+
+/* Section Titles */
+.section-title {
+  animation: fadeInUp 0.8s ease-out 0.8s both;
+}
+
+.section-subtitle {
+  animation: fadeInUp 0.8s ease-out 0.9s both;
+}
+
+/* ========== CARDS - STAGGER ANIMATION ========== */
+
+.card {
+  animation: fadeInUp 0.6s ease-out both;
+  opacity: 0;
+}
+
+/* Cada card tiene un delay diferente para efecto cascada */
+.card:nth-child(1) { animation-delay: 1.0s; }
+.card:nth-child(2) { animation-delay: 1.1s; }
+.card:nth-child(3) { animation-delay: 1.2s; }
+.card:nth-child(4) { animation-delay: 1.3s; }
+.card:nth-child(5) { animation-delay: 1.4s; }
+.card:nth-child(6) { animation-delay: 1.5s; }
+.card:nth-child(7) { animation-delay: 1.6s; }
+.card:nth-child(8) { animation-delay: 1.7s; }
+
+/* ========== HOVER EFFECTS ========== */
+
+/* Transición suave en cards */
+.card {
+  transition: all 0.3s ease;
+}
+
+/* Elevación en hover */
+.card:hover {
+  transform: translateY(-4px);
+}
+
+/* Animación de iconos */
+.card-icon {
+  transition: all 0.3s ease;
+}
+
+.card:hover .card-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+/* ========== BOTÓN ========== */
+
+.btn-primary {
+  animation: pulse 2s infinite;
+  transition: all 0.3s ease;
+}
+
+/* El pulso se detiene al hacer hover */
+.btn-primary:hover {
+  animation: none;
+}
+
+.btn-primary:hover {
+  transform: translateX(1px);
+}
+
+/* ========== PROYECTOS RECIENTES ========== */
+
+.recent-section {
+  animation: fadeInUp 0.8s ease-out 1.8s both;
+}
+
+.recent-card {
+  animation: fadeInUp 0.6s ease-out both;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.recent-card:nth-child(1) { animation-delay: 1.9s; }
+.recent-card:nth-child(2) { animation-delay: 2.0s; }
+.recent-card:nth-child(3) { animation-delay: 2.1s; }
+
+.recent-card:hover {
+  border-color: #9CAF88;
+  transform: translateY(-2px);
+}
+
+/* ========== INPUTS ========== */
+
+.input-section input,
+.input-section textarea {
+  transition: all 0.3s ease;
+}
+
+.input-section input:focus,
+.input-section textarea:focus {
+  outline: none;
+  border-color: #9CAF88;
+  background: #FFFFFF;
+}
+
+/* Estilos para renderizado de Markdown en las respuestas del asistente */
+.markdown-content p {
+  margin-bottom: 0.75rem;
+}
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+.markdown-content strong {
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.markdown-content em {
+  font-style: italic;
+}
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.25;
+}
+.markdown-content h1 { font-size: 1.45rem; }
+.markdown-content h2 { font-size: 1.3rem; }
+.markdown-content h3 { font-size: 1.15rem; }
+.markdown-content ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.markdown-content ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+.markdown-content blockquote {
+  border-left: 3px solid #D3D3CB;
+  padding-left: 0.75rem;
+  color: #606060;
+  font-style: italic;
+  margin: 0.75rem 0;
+}
+.markdown-content hr {
+  border: 0;
+  border-top: 1px solid #E6E6E1;
+  margin: 1rem 0;
+}
+.markdown-content pre {
+  background-color: #F3F3F0;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 0.75rem 0;
+}
+.markdown-content code {
+  background-color: #F3F3F0;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+.markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Imágenes generadas en el modo Chat (gpt-image-2) */
+.chat-generated-image {
+  display: block;
+  max-width: 420px;
+  width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid #E6E6E1;
+  box-shadow: 0 1px 3px rgba(24, 24, 27, 0.08);
+}
+
+/* Feed de Noticias del modo Chat */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ================================================
+   ANIMACIONES MODO CHAT (Replicadas del modo Construir)
+   ================================================ */
+
+/* Sidebar: Entrada suave con fade y deslizamiento sutil */
+#chat-view:not(.hidden) aside {
+  animation: fadeIn 0.6s ease-out both;
+}
+
+/* Título de bienvenida: Sube de abajo */
+#chat-view:not(.hidden) #chat-empty h1 {
+  animation: fadeInUp 0.8s ease-out 0.2s both;
+}
+
+/* Caja de entrada del chat: Zoom suave (scaleIn) */
+#chat-view:not(.hidden) .chat-input-box {
+  animation: scaleIn 0.8s ease-out 0.6s both;
+}
+
+/* Hilo de conversación activa: Entrada suave */
+#chat-view:not(.hidden) #chat-thread {
+  animation: fadeIn 0.5s ease-out both;
+}
+

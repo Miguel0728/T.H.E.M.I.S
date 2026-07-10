@@ -1,0 +1,28 @@
+# Entorno virtual y dependencias
+venv/
+.venv/
+env/
+ENV/
+
+# Archivos de configuración y credenciales (¡CRÍTICO!)
+.env
+
+# Caché de Python
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Directorios específicos del proyecto que contienen datos locales o caché
+.claude/
+chat_uploads/
+data/
+workspaces/
+
+# IDEs y editores de texto
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

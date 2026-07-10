@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kinetix · Studio de Vibe-Coding Agéntico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600&family=Google+Sans+Display:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/api/static/css/style.css?v=7" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ["Google Sans Display", "Google Sans", "system-ui", "sans-serif"],
+            body: ["Google Sans Display", "Google Sans", "system-ui", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"],
+          },
+          colors: {
+            white: "#FAFAF8",
+            zinc: {
+              50: "#FAFAF8",
+              100: "#F3F3F0",
+              200: "#E6E6E1",
+              300: "#D3D3CB",
+              400: "#9C9C94",
+              500: "#7A7A7A",
+              600: "#606060",
+              700: "#4D4D4D",
+              800: "#333333",
+              900: "#1A1A1A",
+            },
+            sage: {
+              DEFAULT: "#9CAF88",
+              50: "#F3F7F2",
+              100: "#E8EFE5",
+              200: "#D1E0CC",
+              300: "#BAD1B3",
+              400: "#A2C39A",
+              500: "#9CAF88",
+              600: "#7E9370",
+              700: "#607055",
+              800: "#414C3A",
+              900: "#21261D",
+            },
+            emerald: {
+              500: "#9CAF88",
+            }
+          },
+        },
+      },
+    };
+  </script>
+</head>
+
+<body class="font-body bg-white text-zinc-900 antialiased overflow-hidden">
+  <div id="app" class="h-screen w-full flex flex-col">
+
+    <!-- HEADER -->
+    <header class="navbar h-14 w-full flex items-center justify-between px-5 border-b border-zinc-200 bg-white shrink-0 z-20 relative">
+      <div class="flex items-center gap-3 cursor-pointer" data-testid="logo-home" onclick="Cosmo.goHome()">
+        <span class="text-xl font-heading font-medium tracking-tight text-zinc-900">Kinetix</span>
+      </div>
+      <div class="absolute left-1/2 -translate-x-1/2 pointer-events-none hidden sm:inline text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-400">
+        vibe-coding agéntico
+      </div>
+      <div class="flex items-center gap-2 select-none" title="Construir: crea una app completa con IA · Chat: conversa libremente con el asistente">
+        <span id="mode-label-build" class="text-xs font-medium text-zinc-900 transition-colors">Construir</span>
+        <button id="chat-mode-toggle" data-testid="chat-mode-toggle" type="button" onclick="Cosmo.toggleChatMode()"
+          title="Construir: crea una app completa con IA · Chat: conversa libremente con el asistente"
+          class="relative inline-flex h-6 w-11 items-center rounded-full bg-zinc-200 transition-colors duration-200 shrink-0">
+          <span id="chat-mode-toggle-knob"
+            class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200"></span>
+        </button>
+        <span id="mode-label-chat" class="text-xs font-medium text-zinc-400 transition-colors">Chat</span>
+      </div>
+    </header>
+
+    <!-- LANDING VIEW -->
+    <main id="landing-view" class="flex-1 flex flex-col overflow-y-auto bg-white">
+
+      <!-- HERO + INPUT -->
+      <div class="min-h-[55vh] shrink-0 flex flex-col items-center justify-center p-8 w-full">
+        <div class="hero text-center mb-8 reveal-up">
+          <h1 class="text-4xl sm:text-5xl font-heading font-light tracking-tight text-zinc-900 mb-4">
+            Construye apps hablando.
+          </h1>
+          <p class="text-zinc-500 text-base max-w-xl mx-auto">
+            Describe la aplicación que imaginas. Un equipo de agentes de IA la diseña, programa y prueba en vivo.
+          </p>
+        </div>
+
+        <!-- LANDING INPUT BAR -->
+        <div
+          class="input-section w-full max-w-2xl bg-zinc-50 border border-zinc-200 rounded-xl shadow-sm focus-within:border-zinc-400 transition-colors reveal-up reveal-delay-1">
+          <!-- Media previews -->
+          <div id="landing-media-row" class="hidden px-4 pt-3 flex gap-2 flex-wrap"></div>
+          <!-- Textarea -->
+          <textarea id="landing-prompt" data-testid="prompt-input" rows="3"
+            placeholder="Ej: Una app de lista de tareas con categorías, modo oscuro y persistencia local…"
+            class="w-full bg-transparent resize-none outline-none text-base px-4 pt-4 pb-2 min-h-[110px] placeholder:text-zinc-400 text-zinc-900"></textarea>
+          <!-- Toolbar -->
+          <div class="flex items-center justify-between px-3 py-2.5 border-t border-zinc-100">
+            <div class="flex items-center gap-0.5">
+              <div class="relative" id="landing-media-dropdown">
+                <button id="landing-media-btn"
+                  class="p-1.5 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                  title="Adjuntar media">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+                <div id="landing-media-menu"
+                  class="hidden absolute top-full left-0 mt-1 bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[140px]">
+                  <button type="button"
+                    class="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent"
+                    onclick="document.getElementById('landing-image-input').click()">
+                    <i data-lucide="image-plus" class="w-4 h-4 text-zinc-600"></i>
+                    <span class="text-xs font-body text-zinc-700">Imagen</span>
+                  </button>
+                  <button type="button"
+                    class="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent"
+                    onclick="document.getElementById('landing-video-input').click()">
+                    <i data-lucide="video" class="w-4 h-4 text-zinc-600"></i>
+                    <span class="text-xs font-body text-zinc-700">Video</span>
+                  </button>
+                </div>
+              </div>
+              <input type="file" id="landing-image-input" accept="image/*" multiple class="hidden" />
+              <input type="file" id="landing-video-input" accept="video/*" class="hidden" />
+              <div class="w-px h-4 bg-zinc-200 mx-2"></div>
+              <div class="relative" id="landing-model-dropdown">
+                <button id="landing-model-btn"
+                  class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                  <img id="landing-model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude"
+                    class="w-4 h-4" />
+                  <span id="landing-model-label">Claude Sonnet 4.6</span>
+                  <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+                </button>
+                <div id="landing-model-menu"
+                  class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]">
+                </div>
+              </div>
+            </div>
+            <button id="landing-build" data-testid="build-button" onclick="Cosmo.startFromLanding()"
+              class="btn-primary w-9 h-9 flex items-center justify-center bg-sage-500 text-zinc-900 rounded-full hover:bg-sage-600 active:scale-95 transition-all shrink-0">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEMPLATE GALLERY -->
+      <div class="w-full max-w-7xl mx-auto px-6 pb-10 reveal-up">
+        <div class="text-center mb-8">
+          <h2 class="section-title text-3xl sm:text-4xl font-heading font-light tracking-tight text-zinc-900 mb-2">Empieza con una plantilla</h2>
+          <p class="section-subtitle text-zinc-500 text-sm">Elige un punto de partida y personalízalo a tu gusto</p>
+        </div>
+        <div id="template-gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+      </div>
+
+      <!-- RECENT PROJECTS -->
+      <div class="recent-section w-full max-w-7xl mx-auto px-6 pb-24 reveal-up">
+        <div class="mb-8">
+          <h2 class="text-3xl font-heading font-light tracking-tight text-zinc-900 mb-2">Proyectos recientes</h2>
+          <p class="text-zinc-500 text-sm">Continúa trabajando en tus aplicaciones creadas recientemente</p>
+        </div>
+        <div id="recent-projects" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+
+      <!-- FOOTER -->
+      <footer class="w-full border-t border-zinc-800 bg-zinc-900 shrink-0">
+        <div class="max-w-7xl mx-auto px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="flex items-center gap-2">
+            <span class="text-base font-heading font-medium text-white">Kinetix</span>
+            <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-400">vibe-coding agéntico</span>
+          </div>
+          <p class="text-xs text-zinc-400 order-3 sm:order-2">© 2026 Kinetix. Construido con Claude.</p>
+          <div class="flex items-center gap-4 text-zinc-400 order-2 sm:order-3">
+            <a href="#" class="hover:text-sage-500 transition-colors" title="Documentación"><i data-lucide="book-open"
+                class="w-4 h-4"></i></a>
+            <a href="#" class="hover:text-sage-500 transition-colors" title="GitHub"><i data-lucide="github"
+                class="w-4 h-4"></i></a>
+            <a href="#" class="hover:text-sage-500 transition-colors" title="Soporte"><i data-lucide="life-buoy"
+                class="w-4 h-4"></i></a>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- WORKSPACE VIEW -->
+    <main id="workspace-view" class="hidden flex-1 flex flex-row overflow-hidden">
+
+      <!-- LEFT: CHAT -->
+      <section class="w-full md:w-1/2 border-r border-zinc-200 flex flex-col bg-zinc-50 shrink-0 relative">
+        <div id="agent-status"
+          class="hidden h-9 shrink-0 items-center gap-2 px-4 text-xs font-mono border-b border-zinc-200 bg-zinc-100 text-zinc-500">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="agent-status-text">Agente trabajando…</span>
+        </div>
+
+        <div id="chat-scroll" class="flex-1 overflow-y-auto py-6"></div>
+
+        <!-- COMPOSER -->
+        <div class="shrink-0 p-4 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent pt-8">
+          <div
+            class="w-full bg-white border border-zinc-200 rounded-xl shadow-sm focus-within:border-zinc-400 transition-colors overflow-hidden">
+            <!-- Media previews -->
+            <div id="media-previews" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+            <!-- Textarea -->
+            <textarea id="composer-input" data-testid="composer-input" rows="1"
+              placeholder="Pide un cambio o pega un error para que el agente QA lo arregle…"
+              class="w-full bg-transparent resize-none outline-none text-sm px-3 pt-3 pb-1 max-h-[180px] placeholder:text-zinc-400 text-zinc-900"></textarea>
+            <!-- Toolbar -->
+            <div class="flex items-center justify-between px-2 py-2 border-t border-zinc-100 mt-1">
+              <div class="flex items-center gap-0.5">
+                <div class="relative" id="media-dropdown">
+                  <button id="media-btn"
+                    class="p-1.5 rounded-md text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
+                    title="Adjuntar media">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                  </button>
+                  <div id="media-menu"
+                    class="hidden absolute top-full left-0 mt-1 bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[140px]">
+                    <button type="button"
+                      class="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent"
+                      onclick="document.getElementById('image-input').click()">
+                      <i data-lucide="image-plus" class="w-4 h-4 text-zinc-600"></i>
+                      <span class="text-xs font-body text-zinc-700">Imagen</span>
+                    </button>
+                    <button type="button"
+                      class="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent"
+                      onclick="document.getElementById('video-input').click()">
+                      <i data-lucide="video" class="w-4 h-4 text-zinc-600"></i>
+                      <span class="text-xs font-body text-zinc-700">Video</span>
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="image-input" accept="image/*" multiple class="hidden" />
+                <input type="file" id="video-input" accept="video/*" class="hidden" />
+                <div class="w-px h-4 bg-zinc-200 mx-2"></div>
+                <div class="relative" id="model-dropdown">
+                  <button id="model-btn"
+                    class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                    <img id="model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude"
+                      class="w-4 h-4" />
+                    <span id="model-label">Claude Sonnet 4.6</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+                  </button>
+                  <div id="model-menu"
+                    class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]">
+                  </div>
+                </div>
+              </div>
+              <button id="send-btn" data-testid="send-button" onclick="Cosmo.sendFromComposer()"
+                class="flex items-center gap-1.5 bg-sage-500 text-zinc-900 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-sage-600 transition-colors disabled:opacity-40">
+                <span>Enviar</span><i data-lucide="send" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT: PREVIEW -->
+      <section class="flex-1 flex flex-col bg-zinc-100 relative overflow-hidden">
+        <div class="h-12 border-b border-zinc-200 flex items-center justify-between px-4 bg-white shrink-0">
+          <div class="flex items-center gap-2">
+            <button data-testid="tab-preview" id="tab-preview" onclick="Cosmo.showTab('preview')"
+              class="text-xs font-medium px-2.5 py-1 rounded text-zinc-900">Vista previa</button>
+            <button data-testid="tab-code" id="tab-code" onclick="Cosmo.showTab('code')"
+              class="text-xs font-medium px-2.5 py-1 rounded text-zinc-400 hover:text-zinc-700 transition-colors">Código</button>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="flex bg-zinc-100 rounded-md p-0.5 border border-zinc-200" id="device-toggle">
+              <button data-testid="device-desktop" onclick="Cosmo.setDevice('desktop')"
+                class="device-btn px-2.5 py-1 rounded text-xs text-zinc-900 bg-white shadow-sm" data-device="desktop">
+                <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+              </button>
+              <button data-testid="device-mobile" onclick="Cosmo.setDevice('mobile')"
+                class="device-btn px-2.5 py-1 rounded text-xs text-zinc-400" data-device="mobile">
+                <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+            <button data-testid="refresh-preview" onclick="Cosmo.refreshPreview()"
+              class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+              <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+            </button>
+            <a id="open-new" data-testid="open-new" target="_blank"
+              class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+              <i data-lucide="external-link" class="w-4 h-4"></i>
+            </a>
+          </div>
+        </div>
+
+        <!-- PREVIEW PANE -->
+        <div id="preview-pane" class="flex-1 flex items-center justify-center p-4 lg:p-6 bg-zinc-100 overflow-hidden">
+          <div id="iframe-container"
+            class="bg-white rounded-xl shadow-md overflow-hidden border border-zinc-200 frame-transition w-full h-full">
+            <iframe id="preview-iframe" data-testid="preview-iframe" class="w-full h-full border-0"
+              title="preview"></iframe>
+          </div>
+        </div>
+
+        <!-- CODE PANE -->
+        <div id="code-pane" class="hidden flex-1 flex flex-row overflow-hidden">
+          <div class="w-56 border-r border-zinc-200 overflow-y-auto shrink-0 bg-zinc-50">
+            <div class="p-3 border-b border-zinc-200 text-xs uppercase tracking-widest text-zinc-400 font-mono">Archivos
+            </div>
+            <div id="file-list" class="flex flex-col text-sm font-mono py-1"></div>
+          </div>
+          <pre id="code-view"
+            class="flex-1 overflow-auto p-4 text-xs font-mono text-zinc-700 whitespace-pre bg-white"></pre>
+        </div>
+      </section>
+    </main>
+
+    <!-- CHAT VIEW (modo chat: conversaciones normales) -->
+    <main id="chat-view" class="hidden flex-1 flex-row overflow-hidden bg-white relative">
+
+      <!-- Fondo oscuro detrás del sidebar en móvil (lo cierra al tocarlo) -->
+      <div id="chat-sidebar-backdrop" onclick="Cosmo.toggleChatSidebar(false)"
+        class="hidden fixed top-14 inset-x-0 bottom-0 bg-black/30 z-20 md:hidden"></div>
+
+      <!-- SIDEBAR: conversaciones (drawer en móvil, fijo en desktop) -->
+      <aside id="chat-sidebar"
+        class="w-64 shrink-0 border-r border-zinc-200 bg-zinc-50 flex flex-col fixed top-14 bottom-0 left-0 z-30 -translate-x-full transition-transform duration-200 md:static md:top-auto md:bottom-auto md:translate-x-0 md:z-auto">
+        <div class="p-3 flex flex-col gap-1">
+          <button onclick="Cosmo.newChatView()" data-testid="new-chat" id="nav-chats-btn"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-600 hover:bg-zinc-200/60 transition-all bg-transparent cursor-pointer border-0">
+            <i data-lucide="plus" class="w-4 h-4"></i> Nueva conversación
+          </button>
+          <button onclick="Cosmo.showNewsPanel()" data-testid="nav-news" id="nav-news-btn"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-zinc-600 hover:bg-zinc-200/60 transition-all bg-transparent cursor-pointer border-0">
+            <i data-lucide="newspaper" class="w-4 h-4"></i> Noticias
+          </button>
+        </div>
+        <div class="px-3 pb-2 text-[10px] font-mono uppercase tracking-widest text-zinc-400">Recientes</div>
+        <div id="chat-list" class="flex-1 overflow-y-auto px-2 pb-3 flex flex-col gap-0.5"></div>
+      </aside>
+
+      <!-- MAIN: conversación activa o estado inicial -->
+      <section class="flex-1 flex flex-col relative overflow-hidden">
+        <button id="chat-sidebar-toggle" onclick="Cosmo.toggleChatSidebar()" data-testid="chat-sidebar-toggle"
+          title="Conversaciones"
+          class="md:hidden absolute top-3 left-3 z-10 p-2 rounded-lg bg-white border border-zinc-200 shadow-sm text-zinc-600 hover:text-zinc-900 transition-colors">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+
+        <!-- ESTADO INICIAL (sin conversación activa) -->
+        <div id="chat-empty" class="flex-1 flex flex-col items-center justify-center px-6">
+          <h1 class="text-3xl sm:text-4xl font-heading font-light tracking-tight text-zinc-900 mb-4 text-center">
+            ¿En qué puedo ayudarte hoy?
+          </h1>
+
+          <!-- Chips de sugerencia: enseñan al usuario nuevo qué puede hacer aquí,
+               incluida la generación de imágenes (que si no, queda escondida en el "+"). -->
+          <div class="flex flex-wrap items-center justify-center gap-2 mb-6 max-w-2xl">
+            <button type="button" onclick="Cosmo.useChatSuggestion('Explícame ')"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 text-xs text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-colors">
+              <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Explícame un concepto
+            </button>
+            <button type="button" onclick="Cosmo.useChatSuggestion('Ayúdame a redactar ')"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 text-xs text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-colors">
+              <i data-lucide="pen-line" class="w-3.5 h-3.5"></i> Redacta un texto
+            </button>
+            <button type="button" onclick="Cosmo.toggleChatImageMode(true)"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 text-xs text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-colors">
+              <i data-lucide="image" class="w-3.5 h-3.5"></i> Genera una imagen
+            </button>
+            <button type="button" onclick="Cosmo.useChatSuggestion('Resume esto: ')"
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-zinc-200 text-xs text-zinc-600 hover:border-zinc-400 hover:bg-zinc-50 transition-colors">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Resume un texto
+            </button>
+          </div>
+
+          <div
+            class="chat-input-box w-full max-w-2xl bg-zinc-50 border border-zinc-200 rounded-xl shadow-sm focus-within:border-zinc-400 transition-colors">
+            <div id="chat-start-badges" class="hidden px-4 pt-3 flex gap-2 flex-wrap"></div>
+            <div id="chat-start-media" class="hidden px-4 pt-3 flex gap-2 flex-wrap"></div>
+            <textarea id="chat-start-input" data-testid="chat-start-input" rows="2"
+              placeholder="Escribe un mensaje…"
+              class="w-full bg-transparent resize-none outline-none text-base px-4 pt-4 pb-2 min-h-[64px] placeholder:text-zinc-400 text-zinc-900"></textarea>
+            <div class="flex items-center justify-between px-3 py-2.5 border-t border-zinc-100">
+              <div class="relative" id="chat-start-tools-dropdown">
+                <button id="chat-start-tools-btn" type="button" data-testid="chat-start-tools-btn"
+                  class="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition-all cursor-pointer"
+                  title="Más opciones">
+                  <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+                <div id="chat-start-tools-menu"
+                  class="hidden bg-white border border-zinc-200 rounded-xl shadow-md py-1 z-[9999] min-w-[160px]">
+                  <button type="button"
+                    class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                    onclick="Cosmo.toggleChatImageMode(true); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                    <i data-lucide="image" class="w-4 h-4 text-zinc-500"></i>
+                    <span class="text-xs font-medium text-zinc-700">Crear imagen</span>
+                  </button>
+                  <button type="button"
+                    class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                    onclick="document.getElementById('chat-start-image-input').click(); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                    <i data-lucide="image-plus" class="w-4 h-4 text-zinc-500"></i>
+                    <span class="text-xs font-medium text-zinc-700">Adjuntar imagen</span>
+                  </button>
+                </div>
+              </div>
+              <input type="file" id="chat-start-image-input" accept="image/*" multiple class="hidden" />
+              <div class="flex items-center gap-2">
+                <div class="relative" id="chat-start-model-dropdown">
+                  <button id="chat-start-model-btn"
+                    class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                    <img id="chat-start-model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude"
+                      class="w-4 h-4" />
+                    <span id="chat-start-model-label">Claude Sonnet 4.6</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+                  </button>
+                  <div id="chat-start-model-menu"
+                    class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]"></div>
+                </div>
+                <button id="chat-start-send" data-testid="chat-start-send" onclick="Cosmo.submitChatPrompt()"
+                  class="btn-primary w-9 h-9 flex items-center justify-center bg-sage-500 text-zinc-900 rounded-full hover:bg-sage-600 active:scale-95 transition-all shrink-0">
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONVERSACIÓN ACTIVA -->
+        <div id="chat-thread" class="hidden flex-1 flex-col overflow-hidden">
+          <div id="chat-thread-scroll" class="flex-1 overflow-y-auto py-6"></div>
+          <div class="shrink-0 p-4 bg-gradient-to-t from-white via-white to-transparent pt-8">
+            <div
+              class="w-full max-w-3xl mx-auto bg-white border border-zinc-200 rounded-xl shadow-sm focus-within:border-zinc-400 transition-colors overflow-hidden">
+              <div id="chat-badges" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+              <div id="chat-composer-media" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+              <textarea id="chat-composer-input" data-testid="chat-composer-input" rows="1"
+                placeholder="Escribe un mensaje…"
+                class="w-full bg-transparent resize-none outline-none text-base px-3 pt-3 pb-1 max-h-[180px] placeholder:text-zinc-400 text-zinc-900"></textarea>
+              <div class="flex items-center justify-between px-2 py-2 border-t border-zinc-100 mt-1">
+                <div class="relative" id="chat-tools-dropdown">
+                  <button id="chat-tools-btn" type="button" data-testid="chat-tools-btn"
+                    class="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition-all cursor-pointer"
+                    title="Más opciones">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                  </button>
+                  <div id="chat-tools-menu"
+                    class="hidden bg-white border border-zinc-200 rounded-xl shadow-md py-1 z-[9999] min-w-[160px]">
+                    <button type="button"
+                      class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                      onclick="Cosmo.toggleChatImageMode(true); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                      <i data-lucide="image" class="w-4 h-4 text-zinc-500"></i>
+                      <span class="text-xs font-medium text-zinc-700">Crear imagen</span>
+                    </button>
+                    <button type="button"
+                      class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                      onclick="document.getElementById('chat-image-input').click(); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                      <i data-lucide="image-plus" class="w-4 h-4 text-zinc-500"></i>
+                      <span class="text-xs font-medium text-zinc-700">Adjuntar imagen</span>
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="chat-image-input" accept="image/*" multiple class="hidden" />
+                <div class="flex items-center gap-2">
+                  <div class="relative" id="chat-model-dropdown">
+                    <button id="chat-model-btn"
+                      class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                      <img id="chat-model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude"
+                        class="w-4 h-4" />
+                      <span id="chat-model-label">Claude Sonnet 4.6</span>
+                      <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+                    </button>
+                    <div id="chat-model-menu"
+                      class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]"></div>
+                  </div>
+                  <button id="chat-send-btn" data-testid="chat-send-button" onclick="Cosmo.sendFromChatComposer()"
+                    class="flex items-center gap-1.5 bg-sage-500 text-zinc-900 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-sage-600 transition-colors disabled:opacity-40">
+                    <span>Enviar</span><i data-lucide="send" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOTICIAS (funcionalidad directa: feed vía NewsAPI, no un tool de agente) -->
+        <div id="chat-news" class="hidden flex-1 flex-col overflow-hidden">
+          <div class="shrink-0 flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+            <!-- Filtro minimalista tipo pill-group -->
+            <div class="inline-flex items-center bg-zinc-100 rounded-full p-1 gap-0.5">
+              <button id="news-tab-all" data-testid="news-tab-all" onclick="Cosmo.loadNews('all')"
+                class="news-tab-btn text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-200">
+                Todas
+              </button>
+              <button id="news-tab-us" data-testid="news-tab-us" onclick="Cosmo.loadNews('us')"
+                class="news-tab-btn text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-200">
+                Estados Unidos
+              </button>
+              <button id="news-tab-pr" data-testid="news-tab-pr" onclick="Cosmo.loadNews('pr')"
+                class="news-tab-btn text-xs font-medium px-4 py-1.5 rounded-full transition-all duration-200">
+                Puerto Rico
+              </button>
+            </div>
+            <button onclick="Cosmo.loadNews()" title="Actualizar"
+              class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+              <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <div id="news-grid" class="flex-1 overflow-y-auto p-6"></div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="/api/static/js/app.js?v=35"></script>
+</body>
+
+</html>
