@@ -1,6 +1,44 @@
+import asyncio
 import json
+from typing import Protocol, runtime_checkable
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
+
+
+# Los modelos GPT-5.6 (sol/terra/luna) devuelven de forma intermitente
+# 401 "insufficient permissions" o 429/5xx en la llamada inicial —
+# comportamiento transitorio de OpenAI (verificación de organización /
+# rate-limiting en modelos recién lanzados), no un error real de la petición:
+# el MISMO request idéntico funciona al reintentar. Como el error ocurre al
+# abrir el stream (antes de emitir cualquier token), reintentar es seguro.
+_RETRYABLE_STATUS = {401, 429, 500, 502, 503, 529}
+_MAX_STREAM_RETRIES = 4
+
+
+def _is_transient_openai_error(exc: Exception) -> bool:
+    status = getattr(exc, "status_code", None)
+    if status in _RETRYABLE_STATUS:
+        return True
+    msg = str(exc).lower()
+    return "insufficient permissions" in msg or "rate limit" in msg or "overloaded" in msg
+
+
+@runtime_checkable
+class ChatSession(Protocol):
+    """Contrato explícito que deben cumplir los clientes de LLM (LlmChat, OpenAiChat).
+
+    El orquestador y el motor de chat consumen esta interfaz sin saber qué
+    proveedor hay debajo — solo llaman a estos 5 métodos y reciben estos
+    3 eventos (TextDelta, ToolCallStart, StreamDone) del generador asíncrono
+    `stream_message()`.
+    """
+
+    def with_model(self, provider: str, model: str) -> "ChatSession": ...
+    def with_tools(self, tools: list) -> "ChatSession": ...
+    def with_params(self, **kwargs) -> "ChatSession": ...
+    def add_tool_result(self, tool_use_id: str, content: str) -> None: ...
+    async def stream_message(self, user_msg: "UserMessage | None" = None): ...
+
 
 class ImageContent:
     def __init__(self, image_base64: str):
@@ -29,8 +67,11 @@ class ToolCallReady:
 
 
 class StreamDone:
-    def __init__(self, tool_calls: list = None):
+    def __init__(self, tool_calls: list = None, usage: dict | None = None):
         self.tool_calls = tool_calls or []
+        # {"input_tokens": int, "output_tokens": int} cuando el proveedor lo reporta;
+        # None si no vino (p.ej. algún error de streaming a mitad de camino).
+        self.usage = usage
 
 
 class ToolCall:
@@ -115,6 +156,7 @@ class LlmChat:
         assistant_text = ""
         tool_uses = []
         current_tool = None
+        usage = {"input_tokens": 0, "output_tokens": 0}
 
         create_kwargs = dict(
             model=self.model_name,
@@ -129,7 +171,12 @@ class LlmChat:
             create_kwargs["tools"] = anthropic_tools
 
         async for event in await self.client.messages.create(**create_kwargs):
-            if event.type == "content_block_start":
+            if event.type == "message_start":
+                # Anthropic reporta los input_tokens reales (incluye caché) aquí.
+                msg_usage = getattr(event.message, "usage", None)
+                if msg_usage is not None:
+                    usage["input_tokens"] = getattr(msg_usage, "input_tokens", 0) or 0
+            elif event.type == "content_block_start":
                 cb = event.content_block
                 if cb.type == "tool_use":
                     current_tool = {"id": cb.id, "name": cb.name, "input_str": ""}
@@ -150,6 +197,10 @@ class LlmChat:
                 if getattr(event.delta, "stop_reason", None) == "max_tokens" and current_tool is not None:
                     tool_uses.append(current_tool)
                     current_tool = None
+                # message_delta.usage.output_tokens es acumulativo (el último valor recibido es el total)
+                delta_usage = getattr(event, "usage", None)
+                if delta_usage is not None:
+                    usage["output_tokens"] = getattr(delta_usage, "output_tokens", 0) or usage["output_tokens"]
 
         content_blocks = []
         if assistant_text:
@@ -165,7 +216,7 @@ class LlmChat:
             tool_call_objs.append(ToolCall(tc["id"], tc["name"], args))
 
         self.messages.append({"role": "assistant", "content": content_blocks})
-        yield StreamDone(tool_calls=tool_call_objs)
+        yield StreamDone(tool_calls=tool_call_objs, usage=usage)
 
 
 class OpenAiChat:
@@ -175,14 +226,15 @@ class OpenAiChat:
     ambas clases, solo consume estos eventos.
     """
 
-    def __init__(self, api_key: str, session_id: str, system_message: str, initial_messages: list):
+    def __init__(self, api_key: str, session_id: str, system_message: str, initial_messages: list, base_url: str | None = None):
         self.api_key = api_key
         self.session_id = session_id
         self.system_message = system_message
         self.tools = []
         self.params = {}
         self.model_name = "gpt-5.5"
-        self.client = AsyncOpenAI(api_key=api_key)
+        self.provider = "openai"
+        self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.pending_tool_results = []
 
         self.messages = [{"role": "system", "content": system_message}]
@@ -194,10 +246,11 @@ class OpenAiChat:
 
     def with_model(self, provider: str, model: str):
         self.model_name = model
+        self.provider = provider
         return self
 
     def with_tools(self, tools: list):
-        # El registro de tools de Kinetix (app/tools/registry.py) ya está en formato
+        # El registro de tools de T.H.E.M.I.S. (app/tools/registry.py) ya está en formato
         # OpenAI ({"type": "function", "function": {...}}) — a diferencia de LlmChat
         # (Claude), aquí no hace falta convertir nada.
         self.tools = tools
@@ -236,19 +289,46 @@ class OpenAiChat:
         assistant_text = ""
         tool_calls_acc: dict[int, dict] = {}
         started_indexes = set()
+        usage = {"input_tokens": 0, "output_tokens": 0}
 
         create_kwargs = dict(
             model=self.model_name,
             max_completion_tokens=self.params.get("max_tokens", 4096),
             messages=self.messages,
             stream=True,
+            stream_options={"include_usage": True},
         )
         if self.tools:
             create_kwargs["tools"] = self.tools
+            if self.provider == "openai":
+                # Modelos GPT-5.x no permiten tools con reasoning_effort distinto de
+                # 'none' en /v1/chat/completions. El SDK puede enviarlo por defecto
+                # para estos modelos, así que lo explicitamos.
+                create_kwargs["reasoning_effort"] = "none"
+            elif self.provider == "deepseek":
+                # La API de DeepSeek no reconoce 'none' como valor de reasoning_effort
+                # (solo high/low/medium/max/xhigh) — a diferencia de OpenAI, aquí un
+                # valor inválido devuelve 400 y rompe toda llamada con tools. 'low'
+                # mantiene el modelo rápido para tool-calling sin desactivar el campo.
+                create_kwargs["reasoning_effort"] = "low"
 
-        stream = await self.client.chat.completions.create(**create_kwargs)
+        # Reintenta la apertura del stream ante errores transitorios de OpenAI
+        # (401/429/5xx intermitentes en modelos GPT-5.6). Seguro porque aún no
+        # se ha emitido ningún token. El último intento re-lanza la excepción.
+        for attempt in range(_MAX_STREAM_RETRIES):
+            try:
+                stream = await self.client.chat.completions.create(**create_kwargs)
+                break
+            except Exception as exc:
+                if not _is_transient_openai_error(exc) or attempt == _MAX_STREAM_RETRIES - 1:
+                    raise
+                await asyncio.sleep(0.6 * (attempt + 1))
 
         async for chunk in stream:
+            # El chunk final (con include_usage) trae el conteo real y choices vacío.
+            if chunk.usage:
+                usage["input_tokens"] = chunk.usage.prompt_tokens or 0
+                usage["output_tokens"] = chunk.usage.completion_tokens or 0
             if not chunk.choices:
                 continue
             delta = chunk.choices[0].delta
@@ -288,10 +368,12 @@ class OpenAiChat:
             assistant_msg["tool_calls"] = openai_tool_calls
 
         self.messages.append(assistant_msg)
-        yield StreamDone(tool_calls=tool_call_objs)
+        yield StreamDone(tool_calls=tool_call_objs, usage=usage)
 
 
 def create_chat(provider: str, api_key: str, session_id: str, system_message: str, initial_messages: list):
     """Fábrica: instancia el cliente correcto (Claude u OpenAI) detrás de la misma interfaz pública."""
+    if provider == "deepseek":
+        return OpenAiChat(api_key=api_key, session_id=session_id, system_message=system_message, initial_messages=initial_messages, base_url="https://api.deepseek.com")
     cls = OpenAiChat if provider == "openai" else LlmChat
     return cls(api_key=api_key, session_id=session_id, system_message=system_message, initial_messages=initial_messages)

@@ -165,6 +165,31 @@ async def _pr_news_fallback(api_key: str, page_size: int) -> list[dict]:
     return _normalize(data.get("articles", []))
 
 
+async def search_news(api_key: str, query: str, language: str = "es", page_size: int = 10) -> list[dict]:
+    """Búsqueda libre sobre /v2/everything — a diferencia de get_us_headlines/get_pr_news
+    (feeds fijos por región), esta trae artículos de cualquier medio indexado que
+    mencionen `query`. La usa la tool `search_news` del chat para profundizar en un
+    tema puntual (ej. "abunda más sobre X") en vez de repetir el feed general.
+    No se cachea por región fija: la key incluye la query para no mezclar resultados
+    de búsquedas distintas, pero sigue respetando el mismo TTL para no gastar cuota
+    si se repite la misma pregunta."""
+    cache_key = f"search:{language}:{query.strip().lower()}"
+    cached = _cache.get(cache_key)
+    if cached and (time.monotonic() - cached[0]) < CACHE_TTL_SECONDS:
+        return cached[1][:page_size]
+
+    data = await _get_json("everything", {
+        "q": query,
+        "language": language,
+        "sortBy": "relevancy",
+        "pageSize": max(page_size, 10),
+        "apiKey": api_key,
+    })
+    articles = _normalize(data.get("articles", []))
+    _cache[cache_key] = (time.monotonic(), articles)
+    return articles[:page_size]
+
+
 async def get_pr_news(api_key: str, page_size: int = 24) -> list[dict]:
     """Mezcla de gobierno + tecnología + farándula de Puerto Rico, directo del
     RSS de varios medios locales (la fuente real que los cubre, a diferencia

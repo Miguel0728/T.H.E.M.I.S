@@ -41,3 +41,35 @@ async def get_news(region: str = "all", limit: int = MAX_ARTICLES_FOR_CHAT) -> d
         for a in articles[:limit]
     ]
     return {"ok": True, "region": region, "count": len(items), "articles": items}
+
+
+async def search_news(query: str, limit: int = MAX_ARTICLES_FOR_CHAT) -> dict:
+    """Búsqueda libre por tema para profundizar en algo puntual (ej. cuando el
+    usuario pide 'abunda más' sobre una noticia ya comentada). A diferencia de
+    get_news (feeds fijos PR/US), esta consulta cualquier medio indexado en
+    NewsAPI que mencione la query."""
+    if not NEWS_API_KEY:
+        return {"ok": False, "error": "La búsqueda de noticias no está configurada en el servidor (falta NEWS_API)."}
+
+    query = (query or "").strip()
+    if not query:
+        return {"ok": False, "error": "Falta el término de búsqueda."}
+
+    limit = max(1, min(limit or MAX_ARTICLES_FOR_CHAT, MAX_ARTICLES_FOR_CHAT))
+
+    try:
+        articles = await news_client.search_news(NEWS_API_KEY, query, page_size=limit)
+    except Exception as e:
+        return {"ok": False, "error": f"Error buscando '{query}': {e}"}
+
+    items = [
+        {
+            "title": a.get("title"),
+            "description": a.get("description"),
+            "source": a.get("source"),
+            "publishedAt": a.get("publishedAt"),
+            "url": a.get("url"),
+        }
+        for a in articles
+    ]
+    return {"ok": True, "query": query, "count": len(items), "articles": items}

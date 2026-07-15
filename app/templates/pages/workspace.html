@@ -1,0 +1,210 @@
+<!-- WORKSPACE VIEW -->
+<!-- Split-screen: a la izquierda vista previa/código, a la derecha el proceso
+     de construcción del agente (chat) como panel fijo — no como drawer
+     superpuesto. El Modo Construir no necesita el drawer global de
+     "Asistente" (ese es para conversaciones normales, Modo Chat). -->
+<main id="workspace-view" class="hidden flex-1 flex flex-row overflow-hidden bg-white">
+
+  <!-- LEFT: Vista previa / Código -->
+  <div id="workspace-preview-panel" class="flex-1 flex flex-col overflow-hidden min-w-0">
+    <div class="h-12 border-b border-zinc-200 flex items-center justify-between px-4 bg-white shrink-0">
+      <div class="flex items-center gap-2">
+        <button data-testid="tab-preview" id="tab-preview" onclick="Cosmo.showTab('preview')"
+          class="text-xs font-medium uppercase tracking-[0.1em] px-2.5 py-1 rounded text-zinc-900">Vista
+          previa</button>
+        <button data-testid="tab-server" id="tab-server" onclick="Cosmo.showTab('server')"
+          class="text-xs font-medium uppercase tracking-[0.1em] px-2.5 py-1 rounded text-zinc-400 hover:text-zinc-700 transition-colors">Servidor</button>
+        <button data-testid="tab-code" id="tab-code" onclick="Cosmo.showTab('code')"
+          class="text-xs font-medium uppercase tracking-[0.1em] px-2.5 py-1 rounded text-zinc-400 hover:text-zinc-700 transition-colors">Código</button>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="flex bg-zinc-100 rounded-md p-0.5 border border-zinc-200" id="device-toggle">
+          <button data-testid="device-desktop" onclick="Cosmo.setDevice('desktop')"
+            class="device-btn px-2.5 py-1 rounded text-xs text-zinc-900 bg-white shadow-sm" data-device="desktop">
+            <i data-lucide="monitor" class="w-3.5 h-3.5"></i>
+          </button>
+          <button data-testid="device-mobile" onclick="Cosmo.setDevice('mobile')"
+            class="device-btn px-2.5 py-1 rounded text-xs text-zinc-400" data-device="mobile">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+        <button data-testid="refresh-preview" onclick="Cosmo.refreshPreview()"
+          class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+          <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+        </button>
+        <a id="open-new" data-testid="open-new" target="_blank"
+          class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+          <i data-lucide="external-link" class="w-4 h-4"></i>
+        </a>
+        <div class="w-px h-4 bg-zinc-200"></div>
+        <button data-testid="toggle-agent-pane" id="toggle-agent-pane-btn" onclick="Cosmo.toggleAgentPane()"
+          title="Mostrar/ocultar el proceso de construcción"
+          class="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-400 hover:text-zinc-700">
+          <i data-lucide="panel-right-close" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PREVIEW PANE -->
+    <div id="preview-pane" class="flex-1 flex items-center justify-center p-4 lg:p-6 bg-zinc-100 overflow-hidden">
+      <div id="iframe-container"
+        class="preview-frame bg-white rounded-xl overflow-hidden frame-transition w-full h-full">
+        <iframe id="preview-iframe" data-testid="preview-iframe" class="w-full h-full border-0"
+          title="preview"></iframe>
+      </div>
+    </div>
+
+    <!-- SERVER PANE (servidor vivo) -->
+    <div id="server-pane" class="hidden flex-1 flex-col items-center justify-center p-4 lg:p-6 bg-zinc-100 overflow-hidden">
+      <!-- Estado: sin servidor -->
+      <div id="server-empty" class="flex flex-col items-center justify-center text-center">
+        <div class="text-5xl mb-5 opacity-30">🖥️</div>
+        <p class="data-label mb-2">Servidor de desarrollo</p>
+        <p class="text-sm text-zinc-500 mb-4 max-w-sm">El agente QA puede levantar un servidor de desarrollo
+          y ejecutar pruebas automáticas. Cuando lo haga, la página aparecerá aquí en tiempo real.</p>
+        <div class="flex items-center gap-2 text-xs text-zinc-400">
+          <span class="w-2 h-2 rounded-full bg-zinc-400"></span> Sin servidor activo
+        </div>
+      </div>
+      <!-- Estado: servidor corriendo -->
+      <div id="server-live" class="hidden w-full h-full flex flex-col">
+        <div class="flex items-center justify-between mb-3 px-2 shrink-0">
+          <div class="flex items-center gap-2">
+            <span id="server-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_12px_rgba(89,240,177,0.7)]"></span>
+            <span id="server-url-display" class="text-xs font-mono text-zinc-600"></span>
+          </div>
+          <button onclick="Cosmo.refreshServerPreview()"
+            class="p-1.5 hover:bg-zinc-200 rounded-md transition-colors text-zinc-400 hover:text-zinc-700"
+            title="Refrescar servidor">
+            <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="server-iframe-container"
+          class="flex-1 bg-white rounded-xl overflow-hidden frame-transition">
+          <iframe id="server-iframe" data-testid="server-iframe" class="w-full h-full border-0"
+            title="live-server" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- CODE PANE -->
+    <div id="code-pane" class="hidden flex-1 flex flex-row overflow-hidden">
+      <div class="w-64 border-r border-zinc-200 overflow-y-auto shrink-0 bg-zinc-50">
+        <div class="p-3 border-b border-zinc-200 data-label flex items-center justify-between">
+          <span>Archivos</span>
+          <span id="file-count" class="text-zinc-400 normal-case tracking-normal"></span>
+        </div>
+        <div id="file-list" class="flex flex-col text-sm font-mono py-1"></div>
+      </div>
+      <div class="flex-1 flex flex-col overflow-hidden bg-white">
+        <div class="h-10 border-b border-zinc-200 flex items-center justify-between px-4 shrink-0">
+          <span id="code-file-path" class="text-xs font-mono text-zinc-500 truncate">Selecciona un archivo para ver su código</span>
+          <button id="code-copy-btn" data-testid="code-copy-btn" onclick="Cosmo.copyCurrentFile()"
+            class="hidden items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 transition-colors shrink-0 bg-transparent border-0 cursor-pointer">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar
+          </button>
+        </div>
+        <div class="flex-1 overflow-auto">
+          <div class="flex min-w-full w-max">
+            <div id="code-line-numbers"
+              class="sticky left-0 select-none text-right pr-3 pl-4 py-4 text-xs font-mono leading-5 text-zinc-400 bg-zinc-50 border-r border-zinc-200 shrink-0 whitespace-pre"></div>
+            <pre id="code-view"
+              class="code-view flex-1 overflow-visible p-4 text-xs font-mono leading-5 text-zinc-700 whitespace-pre"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESIZE HANDLE: arrastra para ajustar el ancho del split-screen -->
+  <div id="workspace-split-handle"
+    class="w-1.5 shrink-0 bg-zinc-200 hover:bg-amber-400/60 active:bg-amber-400 cursor-col-resize transition-colors relative group flex items-center justify-center">
+    <div class="w-[3px] h-10 bg-zinc-400/40 group-hover:bg-amber-400/80 group-active:bg-amber-400 rounded-full transition-colors"></div>
+  </div>
+
+  <!-- RIGHT: Proceso de construcción (streaming del agente) — panel fijo del split-screen -->
+  <aside id="workspace-agent-pane"
+    class="w-[420px] shrink-0 bg-zinc-900 flex flex-col overflow-hidden border-l border-zinc-800 drawer-fluid-transition">
+
+    <!-- Header del panel del agente con indicador de estado en vivo -->
+    <div class="h-12 border-b border-zinc-400 flex items-center justify-between px-4 shrink-0 bg-zinc-800">
+      <div class="flex items-center gap-2.5">
+        <span class="jarvis-glow-ring"><span class="jarvis-dot"></span></span>
+        <span class="text-[10px] font-heading uppercase tracking-widest text-cyan-400">Agente de construcción</span>
+      </div>
+      <!-- Badge de fase activa del agente -->
+      <div id="agent-phase-badge" class="hidden items-center gap-1.5 px-2 py-0.5 rounded-full border border-cyan-500/20 bg-cyan-950/40 text-[9px] font-mono text-cyan-300 tracking-widest">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+        <span id="agent-phase-label">Trabajando</span>
+      </div>
+    </div>
+
+    <!-- Barra de estado de la operación en curso -->
+    <div id="agent-status"
+      class="hidden h-8 shrink-0 items-center gap-2 px-4 text-[10px] font-mono border-b border-zinc-800 bg-zinc-900 text-zinc-500">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse status-dot shrink-0"></span>
+      <span id="agent-status-text" class="truncate">Agente trabajando…</span>
+    </div>
+
+    <!-- Zona de streaming de mensajes del agente -->
+    <div id="chat-scroll" class="flex-1 overflow-y-auto py-5 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-cyan-900/40"></div>
+
+    <!-- COMPOSER — caja de prompt para dar instrucciones al agente -->
+    <div class="shrink-0 p-3 pt-5 border-t border-zinc-800 bg-zinc-900">
+      <div
+        class="composer-card w-full rounded-[18px] focus-within:border-zinc-400 transition-colors overflow-hidden border border-zinc-200 bg-zinc-800">
+        <!-- Media previews -->
+        <div id="media-previews" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+        <!-- Textarea -->
+        <textarea id="composer-input" data-testid="composer-input" rows="1"
+          placeholder="Pide un cambio o pega un error para que el agente QA lo arregle…"
+          class="hud-input w-full resize-none outline-none text-sm px-3 pt-3 pb-1 max-h-[180px] placeholder:text-zinc-600 text-zinc-200 border-0 !shadow-none bg-transparent"></textarea>
+        <!-- Toolbar -->
+        <div class="flex items-center justify-between px-2 py-2 border-t border-zinc-200 mt-1">
+          <div class="flex items-center gap-0.5">
+            <div class="relative" id="media-dropdown">
+              <button id="media-btn"
+                class="p-1.5 rounded-md text-zinc-500 hover:text-amber-400 hover:bg-amber-950/40 transition-colors"
+                title="Adjuntar media">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+              <div id="media-menu"
+                class="hidden absolute top-full left-0 mt-1 bg-zinc-800 border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[140px]">
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-amber-950/40 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                  onclick="document.getElementById('image-input').click()">
+                  <i data-lucide="image-plus" class="w-4 h-4 text-zinc-500"></i>
+                  <span class="text-xs font-body text-zinc-400">Imagen</span>
+                </button>
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-amber-950/40 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                  onclick="document.getElementById('video-input').click()">
+                  <i data-lucide="video" class="w-4 h-4 text-zinc-500"></i>
+                  <span class="text-xs font-body text-zinc-400">Video</span>
+                </button>
+              </div>
+            </div>
+            <input type="file" id="image-input" accept="image/*" multiple class="hidden" />
+            <input type="file" id="video-input" accept="video/*" class="hidden" />
+            <div class="w-px h-4 bg-zinc-400 mx-2"></div>
+            <div class="relative" id="model-dropdown">
+              <button id="model-btn"
+                class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-400 cursor-pointer hover:bg-amber-950/40 rounded-lg transition-all border-0 hover:text-amber-300">
+                <img id="model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude" class="w-4 h-4" />
+                <span id="model-label">Claude Sonnet 4.6</span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-600 ml-1"></i>
+              </button>
+              <div id="model-menu"
+                class="hidden bg-zinc-800 border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]">
+              </div>
+            </div>
+          </div>
+          <button id="send-btn" data-testid="send-button" onclick="Cosmo.sendFromComposer()"
+            class="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-amber-500/30 hover:border-amber-400/50 transition-colors disabled:opacity-40">
+            <span>Enviar</span><i data-lucide="send" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</main>

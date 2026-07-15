@@ -7,15 +7,28 @@ from app.tools.file_tools import proj_dir, list_files
 TEXT_EXT = {".html", ".css", ".js", ".json", ".txt", ".md", ".svg", ".xml"}
 
 
-def run_tests(pid: str) -> dict:
-    """Agente QA: valida el proyecto (entrada index.html, referencias locales,
-    sintaxis básica) y devuelve los problemas encontrados."""
-    d = proj_dir(pid)
-    files = list_files(pid)
+def run_tests(pid: str, project_type: str = "app", external_path: str | None = None) -> dict:
+    """Agente QA: valida el proyecto (punto de entrada, referencias locales,
+    sintaxis básica) y devuelve los problemas encontrados.
+
+    El punto de entrada esperado depende del workflow: 'index.html' en la
+    raíz para Modo Construir, 'frontend/index.html' para Modo Proyecto
+    (ver app/config/prompts.py — PROJECT_SYSTEM_PROMPT define esa estructura).
+
+    En Modo Carpeta Conectada (external_path) no se exige ningún punto de
+    entrada fijo — un proyecto real conectado puede ser cualquier stack (solo
+    backend, una librería, etc.) y no necesariamente sirve un index.html. Ahí
+    el chequeo real corre por cuenta de `run_command` (linters, tests propios
+    del proyecto), esta función solo hace una pasada básica de sintaxis.
+    """
+    d = proj_dir(pid, external_path)
+    files = list_files(pid, external_path)
     issues = []
 
-    if "index.html" not in files:
-        issues.append("Falta 'index.html' (punto de entrada requerido para la vista previa).")
+    if not external_path:
+        entry = "frontend/index.html" if project_type == "proyecto" else "index.html"
+        if entry not in files:
+            issues.append(f"Falta '{entry}' (punto de entrada requerido para la vista previa).")
 
     for rel in files:
         ext = pathlib.Path(rel).suffix.lower()

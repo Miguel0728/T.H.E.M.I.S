@@ -1,17 +1,18 @@
 from pathlib import Path
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 web_router = APIRouter()
 
 
 @web_router.get("/app", response_class=HTMLResponse)
-async def serve_app():
+async def serve_app(request: Request):
     """Sirve la página principal de la aplicación SPA."""
-    index_file = TEMPLATES_DIR / "index.html"
-    return HTMLResponse(index_file.read_text(encoding="utf-8"))
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @web_router.get("/")

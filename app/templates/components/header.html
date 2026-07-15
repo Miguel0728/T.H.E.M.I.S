@@ -1,0 +1,38 @@
+<!-- HEADER: barra superior compacta y plana (breadcrumb + búsqueda + reloj) -->
+<header class="lite-topbar h-12 w-full flex items-center gap-4 px-4 shrink-0 z-20 relative">
+  <button id="global-sidebar-toggle" onclick="Cosmo.toggleChatSidebar()"
+    class="md:hidden p-1.5 rounded-md bg-transparent hover:bg-zinc-100/10 text-zinc-400 hover:text-white transition-colors shrink-0"
+    title="Mostrar menú"><i data-lucide="menu" class="w-4 h-4"></i></button>
+
+  <!-- Breadcrumb: sección actual -->
+  <div class="hidden sm:flex flex-col leading-tight shrink-0 min-w-0" data-testid="header-breadcrumb">
+    <span id="header-breadcrumb-label" class="text-[10px] uppercase tracking-[0.16em] text-zinc-500">T.H.E.M.I.S. / Dashboard</span>
+    <span id="header-breadcrumb-sub" class="text-[9px] text-zinc-600 truncate">Sistema operativo en línea</span>
+  </div>
+
+  <!-- BÚSQUEDA RÁPIDA: escribe y Enter abre el Asistente con ese mensaje -->
+  <div class="flex flex-1 max-w-md mx-auto relative">
+    <i data-lucide="search" class="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+    <input id="header-quick-search" type="text" autocomplete="off" data-testid="header-quick-search"
+      placeholder="Buscar, navegar o preguntarle a THEMIS…"
+      class="lite-input w-full text-xs pl-8 pr-3 py-1.5 rounded-full outline-none" />
+  </div>
+
+  <!-- Header Actions -->
+  <div class="flex items-center gap-3 shrink-0">
+    <!-- THEMIS Drawer Trigger — llamativo cyan -->
+    <button onclick="Cosmo.toggleChatDrawer(true);Cosmo.newChatView()" title="Consultar a THEMIS"
+      class="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider cursor-pointer border-0
+             bg-cyan-500/20 text-cyan-300 border border-cyan-500/40
+             hover:bg-cyan-500/30 hover:text-cyan-200 hover:border-cyan-400/60
+             shadow-[0_0_18px_rgba(34,211,238,0.25)] hover:shadow-[0_0_24px_rgba(34,211,238,0.4)]
+             transition-all duration-300 animate-pulse">
+      <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+      <span class="hidden sm:inline">THEMIS</span>
+    </button>
+    <div class="hidden lg:flex flex-col items-end leading-none">
+      <span id="header-clock" class="text-xs font-mono font-semibold text-zinc-200">--:--:--</span>
+      <span id="header-date" class="text-[9px] text-zinc-600 uppercase tracking-widest mt-0.5">—</span>
+    </div>
+  </div>
+</header>

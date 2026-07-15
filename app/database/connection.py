@@ -30,9 +30,25 @@ def init_db():
             name TEXT NOT NULL,
             model TEXT NOT NULL,
             created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+            updated_at TEXT NOT NULL,
+            project_type TEXT NOT NULL DEFAULT 'app',
+            external_path TEXT
         )
     """)
+    # Migración: bases de datos creadas antes del Modo Proyecto no tienen esta
+    # columna. SQLite no soporta "ADD COLUMN IF NOT EXISTS", así que probamos
+    # y absorbemos el error si ya existe.
+    try:
+        cursor.execute("ALTER TABLE projects ADD COLUMN project_type TEXT NOT NULL DEFAULT 'app'")
+    except sqlite3.OperationalError:
+        pass
+    # Migración: Modo Carpeta Conectada — el proyecto no vive en workspaces/{pid}
+    # sino en una ruta real del disco del usuario (external_path). NULL = proyecto
+    # normal gestionado en workspaces/.
+    try:
+        cursor.execute("ALTER TABLE projects ADD COLUMN external_path TEXT")
+    except sqlite3.OperationalError:
+        pass
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS messages (
             id TEXT PRIMARY KEY,
@@ -63,6 +79,29 @@ def init_db():
             content TEXT NOT NULL,
             created_at TEXT NOT NULL,
             FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS gallery (
+            id TEXT PRIMARY KEY,
+            chat_id TEXT,
+            image_url TEXT NOT NULL,
+            prompt TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    # Consumo de tokens por llamada al LLM (input+output reales, reportados por
+    # Anthropic/OpenAI en cada respuesta) — alimenta los gauges de "tokens
+    # usados hoy" del Dashboard. No es el saldo/cuota real de la cuenta (los
+    # proveedores no exponen eso vía API), es un contador propio contra un
+    # presupuesto diario configurable (ver MODEL_TOKEN_BUDGET en settings.py).
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS token_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            model TEXT NOT NULL,
+            input_tokens INTEGER NOT NULL DEFAULT 0,
+            output_tokens INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
         )
     """)
     conn.commit()
@@ -121,6 +160,17 @@ async def db_fetch_one(query: str, params: tuple = ()) -> dict | None:
             row = cursor.fetchone()
             return _to_dict(row) if row else None
     return await asyncio.to_thread(run)
+
+
+async def record_token_usage(model: str, input_tokens: int, output_tokens: int, created_at: str) -> None:
+    """Registra el consumo real de tokens de una llamada al LLM (ver StreamDone.usage
+    en app/core/llm_client.py). Alimenta los gauges de "tokens usados hoy" del Dashboard."""
+    if not input_tokens and not output_tokens:
+        return
+    await db_execute(
+        "INSERT INTO token_usage (model, input_tokens, output_tokens, created_at) VALUES (?, ?, ?, ?)",
+        (model, input_tokens, output_tokens, created_at),
+    )
 
 
 # Inicializamos la base de datos al importar el módulo

@@ -1,0 +1,175 @@
+<!-- RIGHT CHAT DRAWER (Asistente global) — cerrado por defecto; lo abre el botón
+     "Consultar a THEMIS" del dashboard (o cualquier acceso a una conversación). -->
+<aside id="right-chat-drawer"
+  class="w-96 shrink-0 border-l border-zinc-200 bg-zinc-50 flex flex-col fixed top-12 bottom-0 right-0 z-30 translate-x-full transition-transform duration-200 md:relative md:top-auto md:bottom-auto md:translate-x-0 md:z-auto drawer-fluid-transition pane-collapsed">
+
+  <!-- Drag handle for resizing the drawer on desktop -->
+  <div id="chat-drawer-resize-handle"
+    class="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize z-50 hover:bg-cyan-500/20 active:bg-cyan-500/40 transition-colors flex items-center justify-center group hidden md:flex">
+    <div
+      class="w-[2px] h-8 bg-zinc-700/60 group-hover:bg-cyan-400 group-active:bg-cyan-400 rounded transition-colors">
+    </div>
+  </div>
+
+  <!-- 1. CHAT GENERAL (Normal Chat Panel) -->
+  <div id="chat-view" class="flex-1 flex flex-col overflow-hidden bg-white relative">
+    <!-- Header del drawer con botón discreto de nueva conversación -->
+    <div class="shrink-0 flex items-center justify-between px-4 py-3 border-b border-cyan-500/20 bg-transparent">
+      <span
+        class="text-[10px] font-heading uppercase tracking-widest text-cyan-400 flex items-center gap-1.5 shadow-sm">
+        <span class="jarvis-glow-ring"><span class="jarvis-dot"></span></span> Asistente General
+      </span>
+      <div class="flex items-center gap-0.5">
+        <button onclick="Cosmo.newChatView()" title="Nueva conversación"
+          class="p-1.5 rounded-lg transition-all text-cyan-300 cursor-pointer border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/25 hover:border-cyan-400/50 hover:text-cyan-200 shadow-[0_0_10px_rgba(34,211,238,0.15)] hover:shadow-[0_0_14px_rgba(34,211,238,0.25)] flex items-center justify-center">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+        </button>
+        <button onclick="Cosmo.toggleChatDrawer(false)" title="Cerrar asistente"
+          class="p-1.5 hover:bg-zinc-500/10 rounded-lg transition-colors text-zinc-400 hover:text-zinc-200 cursor-pointer border-0 bg-transparent flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+    <!-- ESTADO INICIAL (sin conversación activa) -->
+    <div id="chat-empty" class="flex-1 flex flex-col items-center justify-center px-6">
+      <p class="data-label mb-3">Modo chat · núcleo en escucha</p>
+      <h1
+        class="text-3xl sm:text-4xl font-heading font-bold tracking-tight text-zinc-900 mb-4 text-center glow-text">
+        ¿En qué puedo ayudarte hoy?
+      </h1>
+
+      <!-- Chips de sugerencia -->
+      <div class="flex flex-wrap items-center justify-center gap-2 mb-6 max-w-2xl">
+        <button type="button" onclick="Cosmo.useChatSuggestion('Explícame ')"
+          class="hud-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-zinc-600 hover:border-zinc-400 transition-colors">
+          <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i> Explícame un concepto
+        </button>
+        <button type="button" onclick="Cosmo.useChatSuggestion('Ayúdame a redactar ')"
+          class="hud-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-zinc-600 hover:border-zinc-400 transition-colors">
+          <i data-lucide="pen-line" class="w-3.5 h-3.5"></i> Redacta un texto
+        </button>
+        <button type="button" onclick="Cosmo.toggleChatImageMode(true)"
+          class="hud-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-zinc-600 hover:border-zinc-400 transition-colors">
+          <i data-lucide="image" class="w-3.5 h-3.5"></i> Genera una imagen
+        </button>
+        <button type="button" onclick="Cosmo.useChatSuggestion('Resume esto: ')"
+          class="hud-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs text-zinc-600 hover:border-zinc-400 transition-colors">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Resume un texto
+        </button>
+      </div>
+
+      <div
+        class="chat-input-box composer-card w-full max-w-2xl rounded-[22px] focus-within:border-zinc-400 transition-colors">
+        <div id="chat-start-badges" class="hidden px-4 pt-3 flex gap-2 flex-wrap"></div>
+        <div id="chat-start-media" class="hidden px-4 pt-3 flex gap-2 flex-wrap"></div>
+        <textarea id="chat-start-input" data-testid="chat-start-input" rows="2" placeholder="Escribe un mensaje…"
+          class="hud-input w-full resize-none outline-none text-base px-4 pt-4 pb-2 min-h-[64px] placeholder:text-zinc-400 text-zinc-900 rounded-t-[22px] border-0 !shadow-none"></textarea>
+        <div class="flex items-center justify-between px-3 py-2.5 border-t border-zinc-100">
+          <div class="relative" id="chat-start-tools-dropdown">
+            <button id="chat-start-tools-btn" type="button" data-testid="chat-start-tools-btn"
+              class="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition-all cursor-pointer"
+              title="Más opciones">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </button>
+            <div id="chat-start-tools-menu"
+              class="hidden bg-white border border-zinc-200 rounded-xl shadow-md py-1 z-[9999] min-w-[160px]">
+              <button type="button"
+                class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                onclick="Cosmo.toggleChatImageMode(true); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                <i data-lucide="image" class="w-4 h-4 text-zinc-500"></i>
+                <span class="text-xs font-medium text-zinc-700">Crear imagen</span>
+              </button>
+              <button type="button"
+                class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                onclick="document.getElementById('chat-start-image-input').click(); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                <i data-lucide="image-plus" class="w-4 h-4 text-zinc-500"></i>
+                <span class="text-xs font-medium text-zinc-700">Adjuntar imagen</span>
+              </button>
+            </div>
+          </div>
+          <input type="file" id="chat-start-image-input" accept="image/*" multiple class="hidden" />
+          <div class="flex items-center gap-2">
+            <div class="relative" id="chat-start-model-dropdown">
+              <button id="chat-start-model-btn"
+                class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                <img id="chat-start-model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude"
+                  class="w-4 h-4" />
+                <span id="chat-start-model-label">Claude Sonnet 4.6</span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+              </button>
+              <div id="chat-start-model-menu"
+                class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]"></div>
+            </div>
+            <button id="chat-start-send" data-testid="chat-start-send" onclick="Cosmo.submitChatPrompt()"
+              class="btn-primary w-9 h-9 flex items-center justify-center bg-sage-500 text-zinc-900 rounded-full hover:bg-sage-600 active:scale-95 transition-all shrink-0">
+              <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONVERSACIÓN ACTIVA -->
+    <div id="chat-thread" class="hidden flex-1 flex-col overflow-hidden">
+      <div id="chat-thread-scroll" class="flex-1 overflow-y-auto py-6"></div>
+      <div class="shrink-0 p-4 pt-8">
+        <div
+          class="composer-card w-full max-w-3xl mx-auto rounded-[20px] focus-within:border-zinc-400 transition-colors overflow-hidden">
+          <div id="chat-badges" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+          <div id="chat-composer-media" class="hidden px-3 pt-3 flex gap-2 flex-wrap"></div>
+          <textarea id="chat-composer-input" data-testid="chat-composer-input" rows="1"
+            placeholder="Escribe un mensaje…"
+            class="hud-input w-full resize-none outline-none text-base px-3 pt-3 pb-1 max-h-[180px] placeholder:text-zinc-400 text-zinc-900 border-0 !shadow-none"></textarea>
+          <div class="flex items-center justify-between px-2 py-2 border-t border-zinc-100 mt-1">
+            <div class="relative" id="chat-tools-dropdown">
+              <button id="chat-tools-btn" type="button" data-testid="chat-tools-btn"
+                class="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-500 hover:text-zinc-800 transition-all cursor-pointer"
+                title="Más opciones">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+              <div id="chat-tools-menu"
+                class="hidden bg-white border border-zinc-200 rounded-xl shadow-md py-1 z-[9999] min-w-[160px]">
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                  onclick="Cosmo.toggleChatImageMode(true); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                  <i data-lucide="image" class="w-4 h-4 text-zinc-500"></i>
+                  <span class="text-xs font-medium text-zinc-700">Crear imagen</span>
+                </button>
+                <button type="button"
+                  class="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-zinc-100 transition-colors text-left border-0 bg-transparent cursor-pointer"
+                  onclick="document.getElementById('chat-image-input').click(); document.querySelectorAll('.chat-floating-menu').forEach(m => m.classList.add('hidden'));">
+                  <i data-lucide="image-plus" class="w-4 h-4 text-zinc-500"></i>
+                  <span class="text-xs font-medium text-zinc-700">Adjuntar imagen</span>
+                </button>
+              </div>
+            </div>
+            <input type="file" id="chat-image-input" accept="image/*" multiple class="hidden" />
+            <div class="flex items-center gap-2">
+              <div class="relative" id="chat-model-dropdown">
+                <button id="chat-model-btn"
+                  class="flex items-center gap-2 bg-transparent text-xs px-2.5 py-1.5 font-body text-zinc-700 cursor-pointer hover:bg-zinc-100 rounded-lg transition-all border-0">
+                  <img id="chat-model-icon" src="/api/static/img/ClaudeSpark.png" alt="Claude" class="w-4 h-4" />
+                  <span id="chat-model-label">Claude Sonnet 4.6</span>
+                  <i data-lucide="chevron-down" class="w-3 h-3 text-zinc-500 ml-1"></i>
+                </button>
+                <div id="chat-model-menu"
+                  class="hidden bg-white border border-zinc-200 rounded-md shadow-lg z-[9999] min-w-[220px]">
+                </div>
+              </div>
+              <button id="chat-send-btn" data-testid="chat-send-button" onclick="Cosmo.sendFromChatComposer()"
+                class="flex items-center gap-1.5 bg-sage-500 text-zinc-900 text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-sage-600 transition-colors disabled:opacity-40">
+                <span>Enviar</span><i data-lucide="send" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- El chat del agente de construcción (antes "project-chat-view" aquí) ahora
+       vive embebido en pages/workspace.html como panel fijo del split-screen —
+       el Modo Construir no necesita este drawer superpuesto. Este drawer queda
+       dedicado exclusivamente al Modo Chat (conversaciones normales). -->
+
+</aside>
