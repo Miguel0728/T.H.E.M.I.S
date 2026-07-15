@@ -1,0 +1,35 @@
+# Blueprint de Render — permite crear el servicio con "New +" → "Blueprint"
+# apuntando a este repositorio, en vez de configurar cada campo a mano.
+# Las API keys (sync: false) se piden en el dashboard de Render al crear el
+# servicio; nunca se guardan en este archivo ni en el repositorio.
+services:
+  - type: web
+    name: themis
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: NEWS_API
+        sync: false
+      - key: FISH_API_KEY
+        sync: false
+
+    # El plan gratuito de Render NO soporta discos persistentes: la base de
+    # datos SQLite (data/cosmo.db), los proyectos generados (workspaces/) y
+    # las imágenes subidas (chat_uploads/) se BORRAN en cada redeploy o reinicio
+    # del contenedor. Para conservarlos entre despliegues, sube de plan (Starter
+    # o superior) y descomenta esto:
+    # disks:
+    #   - name: themis-data
+    #     mountPath: /opt/render/project/src/data
+    #     sizeGB: 1
