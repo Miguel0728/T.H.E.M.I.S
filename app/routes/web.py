@@ -12,7 +12,7 @@ web_router = APIRouter()
 @web_router.get("/app", response_class=HTMLResponse)
 async def serve_app(request: Request):
     """Sirve la página principal de la aplicación SPA."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(name="index.html", context={"request": request})
 
 
 @web_router.get("/")
